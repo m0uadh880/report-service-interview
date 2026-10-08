@@ -1,7 +1,9 @@
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using ReportService;
+using ReportService.Export;
 using ReportService.Services;
 
 CultureInfo.CurrentCulture = new CultureInfo("en-US");
@@ -18,9 +20,13 @@ builder.Services
 builder.Services.AddSingleton<SalesDataClient>();
 builder.Services.AddSingleton<MetricsCalculator>();
 builder.Services.AddSingleton<ReportAggregator>();
+builder.Services.AddReportExport(builder.Configuration);
 
 using var host = builder.Build();
 var aggregator = host.Services.GetRequiredService<ReportAggregator>();
+var exportPipeline = host.Services.GetRequiredService<ReportExportPipeline>();
+// Read now so invalid export settings stop the app before any report is generated.
+var exportFormats = host.Services.GetRequiredService<IOptions<ExportOptions>>().Value.Formats;
 
 // First report: first half of the sample dataset
 var from = new DateOnly(2025, 1, 1);
@@ -56,6 +62,8 @@ if (report.Warnings.Count > 0)
         Console.WriteLine($"  ! {w}");
 }
 
+await exportPipeline.ExportAsync(report, exportFormats);
+
 // Second report: second half
 Console.WriteLine();
 var from2 = new DateOnly(2025, 1, 6);
@@ -77,3 +85,5 @@ if (report2.Warnings.Count > 0)
     foreach (var w in report2.Warnings)
         Console.WriteLine($"  ! {w}");
 }
+
+await exportPipeline.ExportAsync(report2, exportFormats);
