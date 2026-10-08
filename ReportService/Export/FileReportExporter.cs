@@ -15,7 +15,7 @@ public abstract class FileReportExporter : IReportExporter
     protected FileReportExporter(IOptions<ExportOptions> options, IHostEnvironment environment, ILogger logger)
     {
         // Path.Combine returns an absolute OutputDirectory unchanged; a relative one is
-        // resolved against the content root so the result does not depend on the working directory.
+        // resolved against the content root, the same folder appsettings.json is read from.
         _outputDirectory = Path.Combine(environment.ContentRootPath, options.Value.OutputDirectory);
         _logger = logger;
     }

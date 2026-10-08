@@ -8,7 +8,17 @@ using ReportService.Services;
 
 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-var builder = Host.CreateApplicationBuilder(args);
+// FIX (config depends on working directory): was 'Host.CreateApplicationBuilder(args)'.
+// Bug: appsettings.json was only found when the app was started from ReportService/.
+// Cause: a console host's content root defaults to the current working directory, and
+//        appsettings.json is read from the content root. From any other directory the file
+//        was missing, so every setting silently fell back to its default (or failed validation).
+// Fix: use the build output folder, where appsettings.json is copied, as the content root.
+var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory,
+});
 
 builder.Services
     .AddOptions<ReportOptions>()
