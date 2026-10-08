@@ -36,7 +36,7 @@ using var host = builder.Build();
 var aggregator = host.Services.GetRequiredService<ReportAggregator>();
 var exportPipeline = host.Services.GetRequiredService<ReportExportPipeline>();
 // Read now so invalid export settings stop the app before any report is generated.
-var exportFormats = host.Services.GetRequiredService<IOptions<ExportOptions>>().Value.Formats;
+var exportOptions = host.Services.GetRequiredService<IOptions<ExportOptions>>().Value;
 
 // First report: first half of the sample dataset
 var from = new DateOnly(2025, 1, 1);
@@ -72,7 +72,8 @@ if (report.Warnings.Count > 0)
         Console.WriteLine($"  ! {w}");
 }
 
-await exportPipeline.ExportAsync(report, exportFormats);
+if (exportOptions.Enabled)
+    await exportPipeline.ExportAsync(report, exportOptions.Formats);
 
 // Second report: second half
 Console.WriteLine();
@@ -96,4 +97,5 @@ if (report2.Warnings.Count > 0)
         Console.WriteLine($"  ! {w}");
 }
 
-await exportPipeline.ExportAsync(report2, exportFormats);
+if (exportOptions.Enabled)
+    await exportPipeline.ExportAsync(report2, exportOptions.Formats);

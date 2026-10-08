@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
             .AddOptions<ExportOptions>()
             .Bind(configuration.GetSection(ExportOptions.SectionName))
             .Validate(o => !string.IsNullOrWhiteSpace(o.OutputDirectory), "Export:OutputDirectory must not be empty.")
-            .Validate(o => o.Formats.Length > 0, "Export:Formats must list at least one format.")
+            .Validate(o => !o.Enabled || o.Formats.Length > 0, "Export:Formats must list at least one format when Export:Enabled is true.")
             .Validate(o => o.Formats.All(f => !string.IsNullOrWhiteSpace(f)), "Export:Formats must not contain empty entries.")
             .ValidateOnStart();
 

@@ -42,4 +42,14 @@ public class ExportCompositionTests
         var ex = Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IStartupValidator>().Validate());
         Assert.Contains("Export:Formats", ex.Message);
     }
+
+    [Fact]
+    public void AddReportExport_DisabledWithNoFormats_PassesStartupValidation()
+    {
+        using var provider = BuildProvider(new() { ["Export:Enabled"] = "false" });
+
+        provider.GetRequiredService<IStartupValidator>().Validate();
+
+        Assert.False(provider.GetRequiredService<IOptions<ExportOptions>>().Value.Enabled);
+    }
 }
