@@ -1,9 +1,26 @@
 using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using ReportService;
 using ReportService.Services;
 
 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-var aggregator = new ReportAggregator();
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services
+    .AddOptions<ReportOptions>()
+    .Bind(builder.Configuration.GetSection(ReportOptions.SectionName))
+    .Validate(o => o.BatchSize > 0, "Report:BatchSize must be greater than 0.")
+    .Validate(o => o.LowStockThreshold >= 0, "Report:LowStockThreshold must not be negative.");
+
+// Singleton so its HttpClient is reused across reports.
+builder.Services.AddSingleton<SalesDataClient>();
+builder.Services.AddSingleton<MetricsCalculator>();
+builder.Services.AddSingleton<ReportAggregator>();
+
+using var host = builder.Build();
+var aggregator = host.Services.GetRequiredService<ReportAggregator>();
 
 // First report: first half of the sample dataset
 var from = new DateOnly(2025, 1, 1);
@@ -12,7 +29,7 @@ var to   = new DateOnly(2025, 1, 5);
 Console.WriteLine($"Generating report: {from:yyyy-MM-dd} to {to:yyyy-MM-dd}");
 Console.WriteLine(new string('-', 50));
 
-var report = aggregator.GenerateReport(from, to);
+var report = await aggregator.GenerateReportAsync(from, to);
 
 Console.WriteLine($"Total orders    : {report.TotalOrders}");
 Console.WriteLine($"Total revenue   : {report.TotalRevenue:C}");
@@ -47,7 +64,7 @@ var to2   = new DateOnly(2025, 1, 10);
 Console.WriteLine($"Generating report: {from2:yyyy-MM-dd} to {to2:yyyy-MM-dd}");
 Console.WriteLine(new string('-', 50));
 
-var report2 = aggregator.GenerateReport(from2, to2);
+var report2 = await aggregator.GenerateReportAsync(from2, to2);
 
 Console.WriteLine($"Total orders    : {report2.TotalOrders}");
 Console.WriteLine($"Total revenue   : {report2.TotalRevenue:C}");
